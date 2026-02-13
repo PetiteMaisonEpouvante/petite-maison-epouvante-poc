@@ -42,7 +42,11 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL}
     env_file:
       - ./backend/.env
     ports:
