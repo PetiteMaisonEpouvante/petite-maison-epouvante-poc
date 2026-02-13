@@ -64,8 +64,14 @@ jobs:
       - name: Prisma generate
         run: cd backend && npx prisma generate
 
-      - name: Prisma migrate
-        run: cd backend && npx prisma migrate deploy
+      - name: Prisma migrate (only if migrations exist)
+        run: |
+          cd backend
+          if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations)" ]; then
+            npx prisma migrate deploy
+          else
+            echo "No migrations found, skipping migrate deploy"
+          fi
 
       - name: Tests
         run: cd backend && npm test
@@ -85,7 +91,7 @@ jobs:
           context: ./backend
           push: true
           build-args: |
-            DATABASE_URL=postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ vars.DB_NAME }}
+            DATABASE_URL=${{ vars.PRISMA_BUILD_DATABASE_URL }}
           tags: |
             ${{ steps.prep.outputs.backend_image }}:dev-${{ github.sha }}
             ${{ steps.prep.outputs.backend_image }}:dev-latest
