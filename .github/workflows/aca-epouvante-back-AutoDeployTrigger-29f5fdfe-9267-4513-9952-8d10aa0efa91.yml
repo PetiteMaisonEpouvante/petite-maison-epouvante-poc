@@ -17,8 +17,7 @@ jobs:
       packages: read
 
     steps:
-      - name: Checkout to the branch
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Azure Login
         uses: azure/login@v2
@@ -30,12 +29,8 @@ jobs:
       - name: Build and deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          # IMPORTANT: path must be absolute-ish
           appSourcePath: ${{ github.workspace }}/backend
-
-          # IMPORTANT: force Docker build (avoid buildpacks/pack/oryx)
           dockerfilePath: Dockerfile
-          targetLabel: runtime
 
           registryUrl: ghcr.io
           registryUsername: ${{ secrets.ACAEPOUVANTEBACK_REGISTRY_USERNAME }}
@@ -44,17 +39,13 @@ jobs:
           containerAppName: aca-epouvante-back
           resourceGroup: rg-test-collector
 
-          # IMPORTANT: valid GHCR image (lowercase owner/namespace)
           imageToBuild: ghcr.io/petitemaisonepouvante/petitemaison-backend:dev-${{ github.sha }}
-
           ingress: external
           targetPort: 3000
 
-          # Build-time args (Prisma generate)
           buildArguments: |
             DATABASE_URL=${{ vars.PRISMA_BUILD_DATABASE_URL }}
 
-          # Runtime env vars for the container app
           environmentVariables: |
             PORT=3000
             AUTH0_ISSUER_BASE_URL=${{ vars.AUTH0_ISSUER_BASE_URL }}
