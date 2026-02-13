@@ -10,6 +10,16 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/petitemaison-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/petitemaison-frontend
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -21,8 +31,7 @@ jobs:
           POSTGRES_USER: ${{ vars.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
           POSTGRES_DB: ${{ vars.DB_NAME }}
-        ports:
-          - "5432:5432"
+        ports: [ "5432:5432" ]
         options: >-
           --health-cmd "pg_isready -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }}"
           --health-interval 5s
@@ -53,13 +62,37 @@ jobs:
       - name: Prisma generate
         run: cd backend && npx prisma generate
 
-      # si tu as des migrations dans repo, tu peux les appliquer avant les tests
-      - name: Prisma migrate (optional)
+      - name: Prisma migrate
         run: cd backend && npx prisma migrate deploy
-        continue-on-error: false
 
       - name: Tests
         run: cd backend && npm test
+
+      # ---- GHCR PUSH (only on push to develop) ----
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:dev-${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:dev-latest
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Image ref (backend)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: echo "Backend image = ${{ env.BACKEND_IMAGE }}:dev-${{ github.sha }}"
 
   frontend:
     runs-on: ubuntu-latest
@@ -84,3 +117,30 @@ jobs:
 
       - name: Build
         run: cd frontend && npm run build
+
+      # ---- GHCR PUSH (only on push to develop) ----
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push frontend image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:dev-${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:dev-latest
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Image ref (frontend)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: echo "Frontend image = ${{ env.FRONTEND_IMAGE }}:dev-${{ github.sha }}"
+
