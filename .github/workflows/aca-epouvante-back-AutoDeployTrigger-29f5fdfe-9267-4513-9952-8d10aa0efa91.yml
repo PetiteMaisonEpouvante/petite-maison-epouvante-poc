@@ -1,28 +1,24 @@
 name: Trigger auto deployment for aca-epouvante-back
 
-# When this action will be executed
 on:
-  # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ main ]
+    branches: [ main ]
     paths:
-    - '**'
-    - '.github/workflows/aca-epouvante-back-AutoDeployTrigger-29f5fdfe-9267-4513-9952-8d10aa0efa91.yml'
-
-  # Allow manual trigger 
-  workflow_dispatch:      
+      - "backend/**"
+      - ".github/workflows/aca-epouvante-back-AutoDeployTrigger-29f5fdfe-9267-4513-9952-8d10aa0efa91.yml"
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions: 
-      id-token: write #This is required for requesting the OIDC JWT Token
-      contents: read #Required when GH token is used to authenticate with private repo
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
 
     steps:
       - name: Checkout to the branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Azure Login
         uses: azure/login@v2
@@ -31,19 +27,36 @@ jobs:
           tenant-id: ${{ secrets.ACAEPOUVANTEBACK_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.ACAEPOUVANTEBACK_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push container image to registry
+      - name: Build and deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
+          # IMPORTANT: path must be absolute-ish
           appSourcePath: ${{ github.workspace }}/backend
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+
+          # IMPORTANT: force Docker build (avoid buildpacks/pack/oryx)
+          dockerfilePath: Dockerfile
+          targetLabel: runtime
+
           registryUrl: ghcr.io
           registryUsername: ${{ secrets.ACAEPOUVANTEBACK_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.ACAEPOUVANTEBACK_REGISTRY_PASSWORD }}
+
           containerAppName: aca-epouvante-back
           resourceGroup: rg-test-collector
-          imageToBuild: ghcr.io/aca-epouvante-back:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
 
+          # IMPORTANT: valid GHCR image (lowercase owner/namespace)
+          imageToBuild: ghcr.io/petitemaisonepouvante/petitemaison-backend:dev-${{ github.sha }}
 
+          ingress: external
+          targetPort: 3000
+
+          # Build-time args (Prisma generate)
+          buildArguments: |
+            DATABASE_URL=${{ vars.PRISMA_BUILD_DATABASE_URL }}
+
+          # Runtime env vars for the container app
+          environmentVariables: |
+            PORT=3000
+            AUTH0_ISSUER_BASE_URL=${{ vars.AUTH0_ISSUER_BASE_URL }}
+            AUTH0_AUDIENCE=${{ vars.AUTH0_AUDIENCE }}
+            DATABASE_URL=${{ secrets.DATABASE_URL_PROD }}
