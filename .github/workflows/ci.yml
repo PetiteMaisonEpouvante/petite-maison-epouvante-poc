@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ vars.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ vars.DB_NAME }}
+        ports: [ "5432:5432" ]
+        options: >-
+          --health-cmd "pg_isready -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      PORT: ${{ vars.PORT }}
+      AUTH0_ISSUER_BASE_URL: ${{ vars.AUTH0_ISSUER_BASE_URL }}
+      AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
+      DATABASE_URL: postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ vars.DB_NAME }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prep image names (lowercase)
+        id: prep
+        shell: bash
+        run: |
+          OWNER_LC="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "owner_lc=$OWNER_LC" >> "$GITHUB_OUTPUT"
+          echo "backend_image=ghcr.io/$OWNER_LC/petitemaison-backend" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install
+        run: cd backend && npm ci
+
+      - name: Lint
+        run: cd backend && npm run lint
+
+      - name: Prisma generate
+        run: cd backend && npx prisma generate
+
+      - name: Prisma migrate (only if migrations exist)
+        run: |
+          cd backend
+          if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations)" ]; then
+            npx prisma migrate deploy
+          else
+            echo "No migrations found, skipping migrate deploy"
+          fi
+
+      - name: Tests
+        run: cd backend && npm test
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          build-args: |
+            DATABASE_URL=${{ vars.PRISMA_BUILD_DATABASE_URL }}
+          tags: |
+            ${{ steps.prep.outputs.backend_image }}:dev-${{ github.sha }}
+            ${{ steps.prep.outputs.backend_image }}:dev-latest
+
+      - name: Summary
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: |
+          echo "### GHCR images" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: \`${{ steps.prep.outputs.backend_image }}:dev-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prep image names (lowercase)
+        id: prep
+        shell: bash
+        run: |
+          OWNER_LC="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "owner_lc=$OWNER_LC" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=ghcr.io/$OWNER_LC/petitemaison-frontend" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: cd frontend && npm ci
+
+      - name: Build
+        run: cd frontend && npm run build
+        env:
+          VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push frontend image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ steps.prep.outputs.frontend_image }}:dev-${{ github.sha }}
+            ${{ steps.prep.outputs.frontend_image }}:dev-latest
+
+      - name: Summary
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: |
+          echo "### GHCR images" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: \`${{ steps.prep.outputs.frontend_image }}:dev-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
