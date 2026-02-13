@@ -84,6 +84,8 @@ jobs:
         with:
           context: ./backend
           push: true
+          build-args: |
+            DATABASE_URL=postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ vars.DB_NAME }}
           tags: |
             ${{ steps.prep.outputs.backend_image }}:dev-${{ github.sha }}
             ${{ steps.prep.outputs.backend_image }}:dev-latest
