@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ vars.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ vars.DB_NAME }}
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      PORT: ${{ vars.PORT }}
+      AUTH0_ISSUER_BASE_URL: ${{ vars.AUTH0_ISSUER_BASE_URL }}
+      AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
+      DATABASE_URL: postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ vars.DB_NAME }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install
+        run: cd backend && npm ci
+
+      - name: Lint
+        run: cd backend && npm run lint
+
+      - name: Prisma generate
+        run: cd backend && npx prisma generate
+
+      # si tu as des migrations dans repo, tu peux les appliquer avant les tests
+      - name: Prisma migrate (optional)
+        run: cd backend && npx prisma migrate deploy
+        continue-on-error: false
+
+      - name: Tests
+        run: cd backend && npm test
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    env:
+      VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+      VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+      VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: cd frontend && npm ci
+
+      - name: Build
+        run: cd frontend && npm run build
