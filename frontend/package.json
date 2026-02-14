@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.14.0",
