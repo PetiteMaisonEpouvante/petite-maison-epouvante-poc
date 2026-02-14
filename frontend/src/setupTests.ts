@@ -1,10 +1,68 @@
 import '@testing-library/jest-dom/vitest'
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeAll, afterAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 afterEach(() => cleanup())
 
-// Empêche les vraies requêtes réseau pendant les tests
-vi.stubGlobal('fetch', vi.fn(() =>
-  Promise.reject(new Error('fetch is disabled in tests'))
-) as any)
+// 1) Bloque fetch
+beforeAll(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => Promise.reject(new Error('Network disabled in tests (fetch)')))
+  )
+})
+
+// 2) Bloque XHR (c’est LUI qui te fait planter)
+class BlockedXHR {
+  open() {
+    throw new Error('Network disabled in tests (XMLHttpRequest.open)')
+  }
+  send() {
+    throw new Error('Network disabled in tests (XMLHttpRequest.send)')
+  }
+  setRequestHeader() {}
+  addEventListener() {}
+  removeEventListener() {}
+  get responseText() {
+    return ''
+  }
+  get status() {
+    return 0
+  }
+}
+
+beforeAll(() => {
+  // @ts-expect-error override
+  globalThis.XMLHttpRequest = BlockedXHR as any
+})
+
+// 3) Optionnel: évite que jsdom charge des ressources (images/css) et déclenche des requêtes
+beforeAll(() => {
+  vi.stubGlobal('Image', class {
+    onload: null | (() => void) = null
+    onerror: null | (() => void) = null
+    set src(_v: string) {
+      // pas de réseau
+      queueMicrotask(() => this.onload?.())
+    }
+  })
+})
+
+// 4) Si un composant déclenche quand même un truc async, on veut pas un “Unhandled Rejection” silencieux
+let unhandled: any[] = []
+beforeAll(() => {
+  const handler = (reason: any) => {
+    unhandled.push(reason)
+  }
+  process.on('unhandledRejection', handler)
+})
+
+afterAll(() => {
+  if (unhandled.length) {
+    // fait échouer proprement avec un message clair
+    throw new Error(
+      `UnhandledRejection(s) during tests:\n` +
+        unhandled.map((e) => String(e?.stack || e)).join('\n\n')
+    )
+  }
+})
