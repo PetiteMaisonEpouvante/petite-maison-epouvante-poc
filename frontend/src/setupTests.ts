@@ -16,7 +16,7 @@ beforeAll(() => {
     const actual = await vi.importActual<any>('axios')
 
     const instance = {
-      get: vi.fn(async () => ({ data: {} })),
+      get: vi.fn(async () => ({ data: [] })),
       post: vi.fn(async () => ({ data: {} })),
       put: vi.fn(async () => ({ data: {} })),
       patch: vi.fn(async () => ({ data: {} })),

@@ -13,6 +13,10 @@ vi.mock('@auth0/auth0-react', () => ({
   }),
 }))
 
+vi.mock('./api/listings', () => ({
+  listListings: vi.fn(async () => ([])), // ou { items: [] } selon ton implémentation
+}))
+
 describe('App', () => {
   it('renders application title', async () => {
     render(<App />)
