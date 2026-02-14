@@ -32,7 +32,6 @@ class BlockedXHR {
 }
 
 beforeAll(() => {
-  // @ts-expect-error override
   globalThis.XMLHttpRequest = BlockedXHR as any
 })
 
