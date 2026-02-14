@@ -1,7 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeAll, afterAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import process from 'process'
 
 afterEach(() => cleanup())
 
@@ -50,16 +49,16 @@ beforeAll(() => {
 
 // 4) Si un composant déclenche quand même un truc async, on veut pas un “Unhandled Rejection” silencieux
 let unhandled: any[] = []
+
 beforeAll(() => {
-  const handler = (reason: any) => {
-    unhandled.push(reason)
+  const handler = (event: PromiseRejectionEvent) => {
+    unhandled.push(event.reason)
   }
-  process.on('unhandledRejection', handler)
+  globalThis.addEventListener('unhandledrejection', handler as any)
 })
 
 afterAll(() => {
   if (unhandled.length) {
-    // fait échouer proprement avec un message clair
     throw new Error(
       `UnhandledRejection(s) during tests:\n` +
         unhandled.map((e) => String(e?.stack || e)).join('\n\n')
