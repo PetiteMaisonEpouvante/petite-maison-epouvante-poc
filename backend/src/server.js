@@ -1,16 +1,24 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const { auth } = require("express-oauth2-jwt-bearer");
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("./prisma");
 
-const prisma = new PrismaClient();
+const authRoutes = require("./routes/auth.routes");
+const listingRoutes = require("./routes/listing.routes");
+const wishlistRoutes = require("./routes/wishlist.routes");
+const notificationRoutes = require("./routes/notification.routes");
+const conversationRoutes = require("./routes/conversation.routes");
+const reportRoutes = require("./routes/report.routes");
+const adminRoutes = require("./routes/admin.routes");
+const userRoutes = require("./routes/user.routes");
 
 const app = express();
+
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json());
 
+// Health check
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -20,26 +28,17 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-app.get("/hello", (_req, res) => res.json({ message: "Hello Epouvante 👻" }));
+// Public greeting
+app.get("/hello", (_req, res) => res.json({ message: "Hello Epouvante" }));
 
-// Auth0 JWT middleware (API)
-const jwtCheck = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-  tokenSigningAlg: "RS256",
-});
-
-app.get("/me", jwtCheck, (req, res) => {
-  res.json({ sub: req.auth?.payload?.sub, payload: req.auth?.payload });
-});
-
-// DB demo endpoint (protected)
-app.post("/items", jwtCheck, async (req, res) => {
-  const title = String(req.body?.title ?? "").trim();
-  if (!title) return res.status(400).json({ error: "title required" });
-
-  const item = await prisma.item.create({ data: { title } });
-  res.json(item);
-});
+// API routes
+app.use("/auth", authRoutes);
+app.use("/listings", listingRoutes);
+app.use("/wishlists", wishlistRoutes);
+app.use("/notifications", notificationRoutes);
+app.use("/conversations", conversationRoutes);
+app.use("/reports", reportRoutes);
+app.use("/admin", adminRoutes);
+app.use("/users", userRoutes);
 
 module.exports = { app };

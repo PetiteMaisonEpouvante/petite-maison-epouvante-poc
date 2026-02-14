@@ -7,8 +7,206 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Item {
-  id        Int      @id @default(autoincrement())
+// ─── ENUMS ──────────────────────────────────────────────
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ListingType {
+  TRADE
+  GIVE
+}
+
+enum ListingStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum ListingCategory {
+  FIGURINES
+  DVD_BLURAY
+  COMICS
+  BOARD_GAMES
+  FANZINES
+  POSTERS
+  CLOTHING
+  BOOKS
+  OTHER
+}
+
+enum ItemCondition {
+  MINT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ReportReason {
+  INAPPROPRIATE
+  SPAM
+  SCAM
+  OFFENSIVE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  LISTING
+  MESSAGE
+}
+
+// ─── MODELS ─────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  auth0Sub  String   @unique @map("auth0_sub")
+  email     String   @unique
+  nickname  String?
+  avatar    String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  listings      Listing[]
+  wishlists     Wishlist[]
+  notifications Notification[]
+  sentMessages  Message[]                @relation("sender")
+  conversations ConversationParticipant[]
+  reports       Report[]                 @relation("reporter")
+  interests     UserInterest[]
+
+  @@map("users")
+}
+
+model Listing {
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  category    ListingCategory
+  condition   ItemCondition
+  type        ListingType
+  status      ListingStatus   @default(PENDING)
+  images      String[]
+  userId      String          @map("user_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id])
+  conversations Conversation[]
+  reports       Report[]
+
+  @@index([category])
+  @@index([status])
+  @@index([userId])
+  @@map("listings")
+}
+
+model Wishlist {
+  id        String          @id @default(uuid())
   title     String
-  createdAt DateTime @default(now())
+  category  ListingCategory
+  userId    String          @map("user_id")
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("wishlists")
+}
+
+model UserInterest {
+  id       String          @id @default(uuid())
+  userId   String          @map("user_id")
+  category ListingCategory
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, category])
+  @@map("user_interests")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  listingId String   @map("listing_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  listing      Listing                  @relation(fields: [listingId], references: [id])
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  userId         String   @map("user_id")
+  joinedAt       DateTime @default(now()) @map("joined_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  senderId       String   @map("sender_id")
+  content        String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("sender", fields: [senderId], references: [id])
+  reports      Report[]
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model Report {
+  id         String           @id @default(uuid())
+  reason     ReportReason
+  details    String?
+  status     ReportStatus     @default(PENDING)
+  targetType ReportTargetType @map("target_type")
+  reporterId String           @map("reporter_id")
+  listingId  String?          @map("listing_id")
+  messageId  String?          @map("message_id")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  reporter User     @relation("reporter", fields: [reporterId], references: [id])
+  listing  Listing? @relation(fields: [listingId], references: [id])
+  message  Message? @relation(fields: [messageId], references: [id])
+
+  @@index([status])
+  @@map("reports")
 }
