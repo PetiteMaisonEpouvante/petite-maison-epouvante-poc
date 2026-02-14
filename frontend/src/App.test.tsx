@@ -14,8 +14,8 @@ vi.mock('@auth0/auth0-react', () => ({
 }))
 
 describe('App', () => {
-  it('renders application title', () => {
+  it('renders application title', async () => {
     render(<App />)
-    expect(screen.getByText(/Espace communautaire de troc et/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Espace communautaire de troc et/i)).toBeInTheDocument()
   })
 })
