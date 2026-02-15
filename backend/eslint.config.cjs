@@ -3,6 +3,8 @@ const globals = require("globals");
 
 module.exports = [
   js.configs.recommended,
+
+  // Base JS/CJS
   {
     files: ["**/*.js", "**/*.cjs"],
     ignores: ["node_modules/**", "dist/**", "coverage/**"],
@@ -19,10 +21,15 @@ module.exports = [
     },
     rules: { "no-unused-vars": ["error", { argsIgnorePattern: "^_" }] },
   },
+
+  // Tests (Jest)
   {
-    files: ["test/**/*.js", "**/*.test.js", "**/*.spec.js"],
+    files: ["test/**/*.{js,cjs}", "**/*.test.{js,cjs}", "**/*.spec.{js,cjs}"],
     languageOptions: {
-      globals: globals.jest,
+      globals: {
+        ...globals.jest,  // ✅ jest/describe/it/expect/beforeEach/etc
+        ...globals.node,  // ✅ si tes tests utilisent aussi Node globals
+      },
     },
   },
 ];
