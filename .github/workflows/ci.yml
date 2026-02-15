@@ -117,28 +117,79 @@ jobs:
             echo "No frontend test:cov configured, skipping tests"
           fi
 
+  # sonar:
+  #   if : github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   needs: [backend, frontend]
+  #   permissions:
+  #     contents: read
+  #     pull-requests: read
+  #     checks: write
+
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: SonarCloud Scan
+  #       uses: SonarSource/sonarcloud-github-action@v3
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       with:
+  #         args: >
+  #           -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+  #           -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+
   sonar:
-    if : github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: [backend, frontend]
-    permissions:
-      contents: read
-      pull-requests: read
-      checks: write
+  if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  needs: [backend, frontend]
+  permissions:
+    contents: read
+    pull-requests: read
+    checks: write
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v3
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    # ✅ backend coverage
+    - name: Backend install + tests (coverage)
+      run: |
+        cd backend
+        npm ci
+        npm run test:cov
+
+    # ✅ frontend coverage (si tu as réellement un test:cov)
+    - name: Frontend install + tests (coverage)
+      run: |
+        cd frontend
+        npm ci
+        if npm run | grep -q "test:cov"; then
+          npm run test:cov
+        else
+          echo "No frontend test:cov configured, skipping"
+        fi
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v3
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        args: >
+          -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+          -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+          -Dsonar.sources=backend/src,frontend/src
+          -Dsonar.tests=backend/test
+          -Dsonar.test.inclusions=backend/test/**/*.test.js,backend/test/**/*.spec.js
+          -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
+          -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,frontend/dist/**
+
 
   publish:
     runs-on: ubuntu-latest
