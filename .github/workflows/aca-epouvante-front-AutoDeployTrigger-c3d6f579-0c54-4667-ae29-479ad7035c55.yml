@@ -46,4 +46,5 @@ jobs:
             VITE_AUTH0_DOMAIN=${{ vars.VITE_AUTH0_DOMAIN }}
             VITE_AUTH0_CLIENT_ID=${{ vars.VITE_AUTH0_CLIENT_ID }}
             VITE_AUTH0_AUDIENCE=${{ vars.VITE_AUTH0_AUDIENCE }}
-            VITE_API_URL=${{ vars.VITE_API_URL_PROD }}
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+
