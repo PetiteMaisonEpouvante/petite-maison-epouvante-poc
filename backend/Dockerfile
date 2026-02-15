@@ -28,5 +28,4 @@ COPY --from=build /app ./
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && node src/index.js"]
-
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
