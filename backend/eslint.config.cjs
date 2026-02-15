@@ -1,9 +1,10 @@
-// backend/eslint.config.cjs
 const js = require("@eslint/js");
+const globals = require("globals");
 
 module.exports = [
   js.configs.recommended,
 
+  // Base JS/CJS
   {
     files: ["**/*.js", "**/*.cjs"],
     ignores: ["node_modules/**", "dist/**", "coverage/**"],
@@ -18,18 +19,16 @@ module.exports = [
         __dirname: "readonly",
       },
     },
-    rules: {
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-    },
+    rules: { "no-unused-vars": ["error", { argsIgnorePattern: "^_" }] },
   },
 
+  // Tests (Jest)
   {
-    files: ["test/**/*.js"],
+    files: ["test/**/*.{js,cjs}", "**/*.test.{js,cjs}", "**/*.spec.{js,cjs}"],
     languageOptions: {
       globals: {
-        describe: "readonly",
-        it: "readonly",
-        expect: "readonly",
+        ...globals.jest,  // ✅ jest/describe/it/expect/beforeEach/etc
+        ...globals.node,  // ✅ si tes tests utilisent aussi Node globals
       },
     },
   },
