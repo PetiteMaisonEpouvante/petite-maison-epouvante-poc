@@ -1,22 +1,18 @@
 import axios from "axios";
 
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
-});
+const baseURL = import.meta.env.VITE_API_URL;
+if (!baseURL) throw new Error("VITE_API_URL is missing (build-time)");
 
-export const setAuthInterceptor = (
-  getToken: (options?: any) => Promise<string>
-) => {
+const apiClient = axios.create({ baseURL });
+
+export const setAuthInterceptor = (getToken: (options?: any) => Promise<string>) => {
   apiClient.interceptors.request.use(async (config) => {
     const token = await getToken({
-      authorizationParams: {
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-      },
+      authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
     });
 
-    // ✅ compatible AxiosHeaders
-    config.headers.Authorization = `Bearer ${token}`;
-
+    config.headers = config.headers ?? {};
+    (config.headers as any).Authorization = `Bearer ${token}`;
     return config;
   });
 };
