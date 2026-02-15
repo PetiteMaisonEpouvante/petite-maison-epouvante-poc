@@ -15,7 +15,21 @@ const userRoutes = require("./routes/user.routes");
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+app.use(cors({
+  origin: (origin, cb) => {
+    const allowed = (process.env.CORS_ORIGIN || "").split(",").map(s => s.trim()).filter(Boolean);
+
+    // Pas d'origin (curl, healthcheck) => OK
+    if (!origin) return cb(null, true);
+
+    if (allowed.length === 0) return cb(null, true); // fallback dev
+    if (allowed.includes(origin)) return cb(null, true);
+
+    return cb(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
+}));
 app.use(express.json());
 
 // Health check
