@@ -1,4 +1,4 @@
-const { initSocket, getIO } = require("../src/socket");
+const { getIO } = require("../src/socket");
 
 jest.mock("../src/middleware/socketAuth", () => ({
   authenticateSocket: jest.fn((socket, next) => next()),
