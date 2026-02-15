@@ -1,9 +1,8 @@
-// backend/eslint.config.cjs
 const js = require("@eslint/js");
+const globals = require("globals");
 
 module.exports = [
   js.configs.recommended,
-
   {
     files: ["**/*.js", "**/*.cjs"],
     ignores: ["node_modules/**", "dist/**", "coverage/**"],
@@ -18,19 +17,12 @@ module.exports = [
         __dirname: "readonly",
       },
     },
-    rules: {
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-    },
+    rules: { "no-unused-vars": ["error", { argsIgnorePattern: "^_" }] },
   },
-
   {
-    files: ["test/**/*.js"],
+    files: ["test/**/*.js", "**/*.test.js", "**/*.spec.js"],
     languageOptions: {
-      globals: {
-        describe: "readonly",
-        it: "readonly",
-        expect: "readonly",
-      },
+      globals: globals.jest,
     },
   },
 ];
