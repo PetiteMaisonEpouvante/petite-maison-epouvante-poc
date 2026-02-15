@@ -93,6 +93,13 @@ jobs:
       - name: Install
         run: cd frontend && npm ci
 
+      - name: Debug build args
+        run: |
+          echo "VITE_API_URL='${{ vars.VITE_API_URL }}'"
+          echo "VITE_AUTH0_DOMAIN='${{ vars.VITE_AUTH0_DOMAIN }}'"
+          echo "VITE_AUTH0_CLIENT_ID='${{ vars.VITE_AUTH0_CLIENT_ID }}'"
+          echo "VITE_AUTH0_AUDIENCE='${{ vars.VITE_AUTH0_AUDIENCE }}'"
+
       - name: Build
         run: cd frontend && npm run build
         env:
@@ -172,11 +179,6 @@ jobs:
         with:
           context: ./frontend
           push: true
-          build-args: |
-            VITE_API_URL=${{ vars.VITE_API_URL }}
-            VITE_AUTH0_DOMAIN=${{ vars.VITE_AUTH0_DOMAIN }}
-            VITE_AUTH0_CLIENT_ID=${{ vars.VITE_AUTH0_CLIENT_ID }}
-            VITE_AUTH0_AUDIENCE=${{ vars.VITE_AUTH0_AUDIENCE }}
           tags: |
             ${{ steps.prep.outputs.frontend_image }}:dev-${{ github.sha }}
             ${{ steps.prep.outputs.frontend_image }}:dev-latest
