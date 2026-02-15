@@ -1,11 +1,22 @@
+jest.mock("../../src/services/report.service", () => ({
+  listAll: jest.fn(),
+  review: jest.fn(),
+}));
+
+jest.mock("../../src/services/listing.service", () => ({
+  updateStatus: jest.fn(),
+}));
+
+jest.mock("../../src/services/user.service", () => ({
+  updateRole: jest.fn(),
+  listAll: jest.fn(),
+}));
+
 const adminController = require("../../src/controllers/admin.controller");
 const reportService = require("../../src/services/report.service");
 const listingService = require("../../src/services/listing.service");
 const userService = require("../../src/services/user.service");
 
-jest.mock("../../src/services/report.service");
-jest.mock("../../src/services/listing.service");
-jest.mock("../../src/services/user.service");
 
 const mockRes = () => {
   const res = {};

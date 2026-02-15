@@ -1,14 +1,6 @@
 const userService = require("../../src/services/user.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  user: {
-    upsert: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    findMany: jest.fn(),
-  },
-}));
 
 describe("UserService", () => {
   afterEach(() => jest.clearAllMocks());

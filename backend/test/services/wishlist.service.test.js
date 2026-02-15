@@ -1,14 +1,6 @@
 const wishlistService = require("../../src/services/wishlist.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  wishlist: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
 
 describe("WishlistService", () => {
   afterEach(() => jest.clearAllMocks());

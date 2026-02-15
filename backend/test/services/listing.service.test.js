@@ -1,20 +1,6 @@
 const listingService = require("../../src/services/listing.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  listing: {
-    findMany: jest.fn(),
-    count: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  userInterest: { findMany: jest.fn() },
-  notification: { createMany: jest.fn() },
-  $transaction: jest.fn(),
-}));
-
 describe("ListingService", () => {
   afterEach(() => jest.clearAllMocks());
 

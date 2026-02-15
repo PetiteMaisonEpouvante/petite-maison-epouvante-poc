@@ -1,10 +1,6 @@
 const { requireRole } = require("../../src/middleware/requireRole");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  user: { findUnique: jest.fn() },
-}));
-
 const mockRes = () => {
   const res = {};
   res.status = jest.fn().mockReturnValue(res);

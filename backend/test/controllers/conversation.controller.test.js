@@ -1,9 +1,17 @@
+jest.mock("../../src/services/conversation.service", () => ({
+  listByUser: jest.fn(),
+  findOrCreate: jest.fn(),
+}));
+
+jest.mock("../../src/services/message.service", () => ({
+  listByConversation: jest.fn(),
+  create: jest.fn(),
+}));
+
 const conversationController = require("../../src/controllers/conversation.controller");
 const conversationService = require("../../src/services/conversation.service");
 const messageService = require("../../src/services/message.service");
 
-jest.mock("../../src/services/conversation.service");
-jest.mock("../../src/services/message.service");
 
 const mockRes = () => {
   const res = {};

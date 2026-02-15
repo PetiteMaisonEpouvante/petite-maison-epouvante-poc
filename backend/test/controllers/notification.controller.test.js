@@ -1,7 +1,12 @@
+jest.mock("../../src/services/notification.service", () => ({
+  listByUser: jest.fn(),
+  markAsRead: jest.fn(),
+  markAllAsRead: jest.fn(),
+}));
+
 const notificationController = require("../../src/controllers/notification.controller");
 const notificationService = require("../../src/services/notification.service");
 
-jest.mock("../../src/services/notification.service");
 
 const mockRes = () => {
   const res = {};

@@ -1,7 +1,11 @@
+jest.mock("../../src/services/user.service", () => ({
+  findBySub: jest.fn(),
+  upsertFromAuth0: jest.fn(),
+}));
+
 const authController = require("../../src/controllers/auth.controller");
 const userService = require("../../src/services/user.service");
 
-jest.mock("../../src/services/user.service");
 
 const mockRes = () => {
   const res = {};

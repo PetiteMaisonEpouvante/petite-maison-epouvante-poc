@@ -1,14 +1,6 @@
 const reportService = require("../../src/services/report.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  report: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    count: jest.fn(),
-    update: jest.fn(),
-  },
-}));
 
 describe("ReportService", () => {
   afterEach(() => jest.clearAllMocks());

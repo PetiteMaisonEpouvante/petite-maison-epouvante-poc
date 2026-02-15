@@ -1,18 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { authenticateSocket } = require("../../src/middleware/socketAuth");
 
-jest.mock("jsonwebtoken");
-jest.mock("jwks-rsa", () => {
-  return jest.fn(() => ({
-    getSigningKey: jest.fn((kid, cb) => {
-      cb(null, { getPublicKey: () => "fake-public-key" });
-    }),
-  }));
-});
-jest.mock("../../src/prisma", () => ({
-  user: { findUnique: jest.fn() },
-}));
-
 describe("authenticateSocket middleware", () => {
   afterEach(() => jest.clearAllMocks());
 

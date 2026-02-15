@@ -1,10 +1,6 @@
 const { resolveUser } = require("../../src/middleware/resolveUser");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  user: { findUnique: jest.fn() },
-}));
-
 const mockRes = () => {
   const res = {};
   res.status = jest.fn().mockReturnValue(res);

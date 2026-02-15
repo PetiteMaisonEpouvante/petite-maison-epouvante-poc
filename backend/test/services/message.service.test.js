@@ -1,12 +1,6 @@
 const messageService = require("../../src/services/message.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  conversationParticipant: { findFirst: jest.fn() },
-  message: { findMany: jest.fn(), count: jest.fn(), create: jest.fn() },
-  conversation: { update: jest.fn() },
-}));
-
 describe("MessageService", () => {
   afterEach(() => jest.clearAllMocks());
 

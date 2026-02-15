@@ -1,14 +1,6 @@
 const notificationService = require("../../src/services/notification.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  notification: {
-    findMany: jest.fn(),
-    count: jest.fn(),
-    updateMany: jest.fn(),
-    create: jest.fn(),
-  },
-}));
 
 describe("NotificationService", () => {
   afterEach(() => jest.clearAllMocks());

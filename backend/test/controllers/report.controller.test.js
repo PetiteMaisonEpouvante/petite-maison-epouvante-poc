@@ -1,7 +1,10 @@
+jest.mock("../../src/services/report.service", () => ({
+  create: jest.fn(),
+}));
+
+
 const reportController = require("../../src/controllers/report.controller");
 const reportService = require("../../src/services/report.service");
-
-jest.mock("../../src/services/report.service");
 
 const mockRes = () => {
   const res = {};

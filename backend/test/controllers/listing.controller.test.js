@@ -1,8 +1,15 @@
+jest.mock("../../src/services/listing.service", () => ({
+  list: jest.fn(),
+  getById: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+  getByUser: jest.fn(),
+}));
+
+
 const listingController = require("../../src/controllers/listing.controller");
 const listingService = require("../../src/services/listing.service");
-
-jest.mock("../../src/services/listing.service");
-jest.mock("../../src/socket", () => ({ getIO: jest.fn(() => null) }));
 
 const mockRes = () => {
   const res = {};

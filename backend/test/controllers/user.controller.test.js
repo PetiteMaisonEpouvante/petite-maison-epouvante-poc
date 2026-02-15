@@ -1,7 +1,11 @@
+jest.mock("../../src/services/interest.service", () => ({
+  getByUser: jest.fn(),
+  setForUser: jest.fn(),
+}));
+
 const userController = require("../../src/controllers/user.controller");
 const interestService = require("../../src/services/interest.service");
 
-jest.mock("../../src/services/interest.service");
 
 const mockRes = () => {
   const res = {};

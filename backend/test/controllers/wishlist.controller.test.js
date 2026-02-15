@@ -1,7 +1,12 @@
+jest.mock("../../src/services/wishlist.service", () => ({
+  list: jest.fn(),
+  create: jest.fn(),
+  remove: jest.fn(),
+}));
+
 const wishlistController = require("../../src/controllers/wishlist.controller");
 const wishlistService = require("../../src/services/wishlist.service");
 
-jest.mock("../../src/services/wishlist.service");
 
 const mockRes = () => {
   const res = {};

@@ -1,14 +1,6 @@
 const interestService = require("../../src/services/interest.service");
 const prisma = require("../../src/prisma");
 
-jest.mock("../../src/prisma", () => ({
-  userInterest: {
-    findMany: jest.fn(),
-    deleteMany: jest.fn(),
-    createMany: jest.fn(),
-  },
-}));
-
 describe("InterestService", () => {
   afterEach(() => jest.clearAllMocks());
 
